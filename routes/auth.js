@@ -16,24 +16,29 @@ router.get(
 router.get(
   "/google/callback",
   passport.authenticate("google", {
-    failureRedirect: `${process.env.FRONTEND_URL}/login?error=auth_failed`,
+    failureRedirect: `${
+      process.env.DEPLOYED_FRONTEND_URL || process.env.FRONTEND_URL
+    }/login?error=auth_failed`,
   }),
   (req, res) => {
     try {
       // Generate JWT token
       const token = generateJWT(req.user);
 
-      // Determine frontend URL based on referer or default
-      const frontendUrl = req.get("Referer")?.includes("localhost")
-        ? process.env.FRONTEND_URL
-        : process.env.DEPLOYED_FRONTEND_URL || process.env.FRONTEND_URL;
+      // Use deployed frontend URL for production, local for development
+      const frontendUrl =
+        process.env.NODE_ENV === "production"
+          ? process.env.DEPLOYED_FRONTEND_URL
+          : process.env.FRONTEND_URL;
 
       // Redirect to frontend with token
       res.redirect(`${frontendUrl}/login?token=${token}&success=true`);
     } catch (error) {
       console.error("Token generation error:", error);
       const frontendUrl =
-        process.env.DEPLOYED_FRONTEND_URL || process.env.FRONTEND_URL;
+        process.env.NODE_ENV === "production"
+          ? process.env.DEPLOYED_FRONTEND_URL
+          : process.env.FRONTEND_URL;
       res.redirect(`${frontendUrl}/login?error=token_generation_failed`);
     }
   }
